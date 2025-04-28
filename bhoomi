@@ -1,0 +1,81 @@
+import streamlit as st
+
+# Define the class
+class StudentAttendanceLedger:
+    def __init__(self):
+        self.attendance_data = {}
+
+    def add_student(self, student_name):
+        if student_name not in self.attendance_data:
+            self.attendance_data[student_name] = []
+            return f"Student {student_name} added to the ledger."
+        else:
+            return f"Student {student_name} already exists in the ledger."
+
+    def mark_attendance(self, student_name, present):
+        if student_name in self.attendance_data:
+            self.attendance_data[student_name].append(present)
+            return f"Attendance for {student_name}: {'Present' if present else 'Absent'}"
+        else:
+            return f"Student {student_name} not found in the ledger."
+
+    def get_attendance_summary(self, student_name):
+        if student_name in self.attendance_data:
+            total_classes = len(self.attendance_data[student_name])
+            total_present = sum(self.attendance_data[student_name])
+            total_absent = total_classes - total_present
+            return total_classes, total_present, total_absent
+        else:
+            return None
+
+    def get_full_attendance(self):
+        attendance = {}
+        for student, records in self.attendance_data.items():
+            attendance[student] = ['Present' if r else 'Absent' for r in records]
+        return attendance
+
+# Initialize session state
+if "ledger" not in st.session_state:
+    st.session_state.ledger = StudentAttendanceLedger()
+
+st.title("📘 Student Attendance Ledger")
+
+# Section: Add Student
+st.header("➕ Add Student")
+student_name = st.text_input("Enter student name:")
+if st.button("Add Student"):
+    msg = st.session_state.ledger.add_student(student_name)
+    st.success(msg)
+
+# Section: Mark Attendance
+st.header("✅ Mark Attendance")
+if st.session_state.ledger.attendance_data:
+    selected_student = st.selectbox("Select student:", list(st.session_state.ledger.attendance_data.keys()))
+    present = st.radio("Mark attendance as:", ("Present", "Absent"))
+    if st.button("Submit Attendance"):
+        is_present = True if present == "Present" else False
+        msg = st.session_state.ledger.mark_attendance(selected_student, is_present)
+        st.info(msg)
+else:
+    st.warning("No students in the ledger. Please add a student first.")
+
+# Section: Display Attendance Ledger
+st.header("📊 Attendance Ledger")
+attendance = st.session_state.ledger.get_full_attendance()
+if attendance:
+    for student, records in attendance.items():
+        st.write(f"**{student}**: {', '.join(records)}")
+else:
+    st.write("No attendance records yet.")
+
+# Section: Attendance Summary
+st.header("📈 Attendance Summary")
+if st.session_state.ledger.attendance_data:
+    selected_student_summary = st.selectbox("Select student for summary:", list(st.session_state.ledger.attendance_data.keys()), key="summary_select")
+    if st.button("Show Summary"):
+        summary = st.session_state.ledger.get_attendance_summary(selected_student_summary)
+        if summary:
+            total_classes, total_present, total_absent = summary
+            st.write(f"**{selected_student_summary}** - Total Classes: {total_classes}, Present: {total_present}, Absent: {total_absent}")
+else:
+    st.write("Add and mark attendance for students to see a summary.")
